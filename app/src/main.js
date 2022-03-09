@@ -7,8 +7,12 @@ Vue.config.productionTip = false
 
 const socketConnection = SocketIO('http://localhost:3000');
 Vue.use(new VueSocketIO({
-    debug: true,
-    connection: socketConnection,
+  debug: true,
+  connection: socketConnection,
+  options: {
+    withCredentials: true,
+    transports: ["websocket"]
+  }
 }))
 
 new Vue({
