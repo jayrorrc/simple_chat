@@ -10,6 +10,7 @@ const io = require('socket.io')(server, {
 
 io.on('connection', (socket) => {
   socket.emit('connections', io.sockets.sockets.size);
+  socket.broadcast.emit('connections', io.sockets.sockets.size);
 
   socket.on('disconnect', () => {
       console.log("A user disconnected");
