@@ -1,71 +1,44 @@
 <template>
   <div class="simple-chat">
-    <div class="container">
-      <div class="col-lg-6 offset-lg-3">
+    <WarningBar
+      v-if="ready"
+      :info="info"
+    />
 
-        <div v-if="ready">
-          <p v-for="user in info" :key="user.username">
-              {{user.username}} {{user.type}}
-          </p>
-        </div>
+    <LogIn
+      v-if="!ready"
+      @addUser="(username) => addUser(username)"
+    />
 
-        <div v-if="!ready">
-          <h4>Enter your username</h4>
-          <form @submit.prevent="addUser">
-            <div class="form-group row">
-              <input type="text" class="form-control col-9" v-model="username"
-                  placeholder="Enter username here">
-              <input type="submit" value="Join" class="btn btn-sm btn-info ml-1">
-            </div>
-          </form>
-        </div>
-
-        <h2 v-else>{{username}}</h2>
-        <div class="card bg-info" v-if="ready">
-          <div class="card-header text-white">
-            <h4>Simple Chat <span class="float-right">{{connections}} connections</span></h4>
-          </div>
-          <ul class="list-group list-group-flush text-right">
-            <small v-if="typing" class="text-white">{{typing}} is typing</small>
-            <li class="list-group-item" v-for="message in messages" :key="message.timestamp">
-              <span :class="{'float-left':message.type === 1}">
-                {{message.message}}
-                <small>Send by: {{message.user}}</small>
-                <small>
-                  {{ getViewedBy(message) }}
-                </small>
-              </span>
-            </li>
-          </ul>
-
-          <div class="card-body">
-            <form @submit.prevent="send">
-              <div class="form-group">
-                <input
-                  type="text"
-                  class="form-control"
-                  v-model="newMessage"
-                  placeholder="Enter message here"
-                  @focus="viewedMensage()"
-                >
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <MessagesChat
+      v-else
+      :username="username"
+      :connections="connections"
+      :typing="typing"
+      :messages="messages"
+      @send="(newMessage) => send(newMessage)"
+    />
   </div>
 </template>
 
 <script>
+import WarningBar from "./WarningBar"
+import LogIn from "./LogIn"
+import MessagesChat from "./MessagesChat"
+
 export default {
   name: 'SimpleChat',
 
+  components: {
+    WarningBar,
+    LogIn,
+    MessagesChat,
+  },
+
   data() {
     return {
-      newMessage: null,
       messages: [],
-      typing: false,
+      typing: '',
       username: null,
       ready: false,
       info: [],
@@ -94,7 +67,7 @@ export default {
     },
 
     stopTyping: function () {
-      this.typing = false;
+      this.typing = '';
     },
 
     joined: function (data) {
@@ -146,53 +119,30 @@ export default {
     }
   },
 
-  watch: {
-    newMessage(value) {
-      value
-      ? this.$socket.emit('typing', this.username)
-      : this.$socket.emit('stopTyping')
-    }
-  },
-
   methods: {
-    send() {
+    send(newMessage) {
       const timestamp = Date.now()
 
       this.messages.push({
-        message: this.newMessage,
+        message: newMessage,
         type: 0,
         user: 'Me',
         timestamp,
       });
 
       this.$socket.emit('chatMessage', {
-        message: this.newMessage,
+        message: newMessage,
         user: this.username,
         timestamp,
       });
-
-      this.newMessage = null;
     },
 
-    addUser() {
-      this.ready = true;
-      this.$socket.emit('joined', this.username)
+    addUser(username) {
+      this.ready = true
+      this.username = username
+
+      this.$socket.emit('joined', username)
     },
-
-    viewedMensage() {
-      this.$socket.emit('viewedMensage', {
-        user : this.username,
-        timestamp: Date.now()
-      })
-    },
-
-    getViewedBy(message) {
-      if (!message.viewedBy) {
-        return ''
-      }
-
-      return `viewed by: ${message.viewedBy.join(',')}`
-    }
   },
 }
 </script>
