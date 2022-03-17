@@ -27,21 +27,29 @@
           </div>
           <ul class="list-group list-group-flush text-right">
             <small v-if="typing" class="text-white">{{typing}} is typing</small>
-            <li class="list-group-item" v-for="message in messages" :key="message.user">
+            <li class="list-group-item" v-for="message in messages" :key="message.timestamp">
               <span :class="{'float-left':message.type === 1}">
                 {{message.message}}
-                <small>:{{message.user}}</small>
+                <small>Send by: {{message.user}}</small>
+                <small>
+                  {{ getViewedBy(message) }}
+                </small>
               </span>
             </li>
           </ul>
 
           <div class="card-body">
-              <form @submit.prevent="send">
-                <div class="form-group">
-                  <input type="text" class="form-control" v-model="newMessage"
-                      placeholder="Enter message here">
-                </div>
-              </form>
+            <form @submit.prevent="send">
+              <div class="form-group">
+                <input
+                  type="text"
+                  class="form-control"
+                  v-model="newMessage"
+                  placeholder="Enter message here"
+                  @focus="viewedMensage()"
+                >
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -77,6 +85,7 @@ export default {
         message: data.message,
         type: 1,
         user: data.user,
+        timestamp: data.timestamp
       });
     },
 
@@ -113,6 +122,28 @@ export default {
     connections: function (data) {
       this.connections = data;
     },
+
+    viewedMensage: function (data) {
+      const lastMensageIndex = this.messages.length - 1
+
+      if (lastMensageIndex >= 0) {
+        const lastTimestamp = this.messages[lastMensageIndex].timestamp
+
+        if (lastTimestamp < data.timestamp) {
+          const lastMessage = this.messages[lastMensageIndex]
+
+          if (lastMessage.user != data.user) {
+            if (lastMessage.viewedBy) {
+              if (!lastMessage.viewedBy.includes(data.user)) {
+                this.messages[lastMensageIndex].viewedBy.push(data.user)
+              }
+            } else {
+              this.messages[lastMensageIndex].viewedBy = [ data.user ]
+            }
+          }
+        }
+      }
+    }
   },
 
   watch: {
@@ -125,15 +156,19 @@ export default {
 
   methods: {
     send() {
+      const timestamp = Date.now()
+
       this.messages.push({
         message: this.newMessage,
         type: 0,
         user: 'Me',
+        timestamp,
       });
 
       this.$socket.emit('chatMessage', {
         message: this.newMessage,
-        user: this.username
+        user: this.username,
+        timestamp,
       });
 
       this.newMessage = null;
@@ -142,6 +177,21 @@ export default {
     addUser() {
       this.ready = true;
       this.$socket.emit('joined', this.username)
+    },
+
+    viewedMensage() {
+      this.$socket.emit('viewedMensage', {
+        user : this.username,
+        timestamp: Date.now()
+      })
+    },
+
+    getViewedBy(message) {
+      if (!message.viewedBy) {
+        return ''
+      }
+
+      return `viewed by: ${message.viewedBy.join(',')}`
     }
   },
 }

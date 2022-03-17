@@ -35,6 +35,10 @@ io.on('connection', (socket) => {
   socket.on('leave', (data) => {
     socket.broadcast.emit('leave', (data));
   });
+
+  socket.on('viewedMensage', (data) => {
+    socket.broadcast.emit('viewedMensage', (data));
+  });
 });
 
 const PORT = 3000
