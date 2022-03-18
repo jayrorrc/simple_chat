@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p v-for="user in info" :key="user.username">
+    <p class="warning" v-for="user in info" :key="user.username">
         {{user.username}} {{user.type}}
     </p>
   </div>
@@ -21,4 +21,11 @@ export default {
 </script>
 
 <style scoped>
+.warning {
+  background: #f7fdef;
+  width: 60%;
+  margin: auto;
+  border-radius: 10px;
+  padding: 5px;
+}
 </style>
